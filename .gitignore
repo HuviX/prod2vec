@@ -1,0 +1,11 @@
+raw_data
+data
+.pytest_cache
+__pycache__
+/w2vec/train_df
+w2vec/weights
+w2vec/.pytest_cache
+w2vec/.ipynb_checkpoints
+w2vec/__pycache__
+w2vec/use w2vec.ipynb
+.ipynb_checkpoints
