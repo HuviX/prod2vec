@@ -24,7 +24,7 @@ def init_model(window_len: int, min_count: int)-> Word2Vec():
 
 
 def main(n_epochs: int, min_count: int):
-    paths = ['cart_sessions.pkl', 'view_sessions.pkl']#, 'combined_sessions.pkl']
+    paths = ['cart_df.pkl', 'view_df.pkl']#, 'combined_sessions.pkl']
     model_names = ['cart', 'view']#, 'combined']
     for model_name, path in zip(model_names, paths):
         data = load_data(path)

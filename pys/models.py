@@ -7,10 +7,6 @@ from .utils import get_scores, mean
 
 class cosine_model():
     def __init__(self, path):
-        with open(path+'/old2new_dict.pkl', 'rb') as handle:
-            self.old2new = pickle.load(handle)
-        with open(path+'/new2old_dict.pkl', 'rb') as handle:
-            self.new2old = pickle.load(handle)
         self.similarities_view = sp.load_npz(path+'/similarities_view.npz')
         self.similarities_view = self.similarities_view.tocsc()
         
@@ -21,39 +17,37 @@ class cosine_model():
     def _predict(self, session, topn, how='mean'):
         res_view = []
         res_cart = []
-        fancy = []
         for vec in session['views']:
-            new_item_id = self.old2new[vec]
-            fancy.append(new_item_id)
-        col = self.similarities_view[:, fancy]
-        try:
-            ix = np.argpartition(col.data,kth=-topn-1, axis=0)[-topn-1:]
-            indices = col.indices[ix]
-            values = col.data[ix]
-        except ValueError:
-            indices = col.indices
-            values = col.data
-        for i, ind in enumerate(indices):
-            res_view.append([self.new2old[ind], values[i]])
-        fancy = []
-        for vec in session['to_cart']:
-            new_item_id = self.old2new[vec]
-            fancy.append(new_item_id)
-        col = self.similarities_cart_add[:, fancy]
-        try:
-            ix = np.argpartition(col.data,kth=-topn-1, axis=0)[-topn-1:]
-            indices = col.indices[ix]
-            values = col.data[ix]
-        except ValueError:
-            indices = col.indices
-            values = col.data
+            new_item_id = vec
+            col = self.similarities_view[:, new_item_id]
+            try:
+                ix = np.argpartition(col.data,kth=-topn-1, axis=0)[-topn-1:]
+                indices = col.indices[ix]
+                values = col.data[ix]
+            except ValueError:
+                indices = col.indices
+                values = col.data
+            for i, ind in enumerate(indices):
+                res_view.append([ind, values[i]])
 
-        for i, ind in enumerate(indices):
-            res_cart.append([self.new2old[ind], values[i]])
+        for vec in session['to_cart']:
+            new_item_id = vec
+            col = self.similarities_cart_add[:, new_item_id]
+            try:
+                ix = np.argpartition(col.data,kth=-topn-1, axis=0)[-topn-1:]
+                indices = col.indices[ix]
+                values = col.data[ix]
+            except ValueError:
+                indices = col.indices
+                values = col.data
+
+            for i, ind in enumerate(indices):
+                res_cart.append([ind, values[i]])
 
         res_cart += res_view
         #Сортим по скорам.
         res_cart.sort(key=lambda x: x[1], reverse=True)
+
         return get_scores(res_cart, how)[:topn]
 
 
@@ -67,8 +61,9 @@ class prod2Vec:
         prediction = []
         for vec in session:
             try:
-                v = self.model.wv[vec]
+                v = self.model.wv[str(vec)]
                 similar = self.model.wv.similar_by_vector(v, topn=n+1,)[1:]
+                similar = [(int(x[0]), x[1]) for x in similar]
                 prediction.append(similar)
             except KeyError:
                 continue
@@ -105,14 +100,9 @@ class CombinedProd2Vec:
 
 
 class top():
-    def __init__(self, path='data/top50.txt'):
-        self.top50 = []
-        with open(path) as f:
-            a = f.readline()
-            while a:
-                self.top50.append(a.strip())
-                a = f.readline()
-        self.top50 = self.top50[:50]
+    def __init__(self, path='data/top50.pkl'):
+        with open(path, 'rb') as handle:
+            self.top50 = pickle.load(handle) 
 
 
     def get_prediction(self):
