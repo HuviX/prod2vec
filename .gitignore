@@ -9,3 +9,7 @@ w2vec/.ipynb_checkpoints
 w2vec/__pycache__
 w2vec/use w2vec.ipynb
 .ipynb_checkpoints
+YetiRank
+YetiRankPairwise
+exp_train.pkl
+exp_test.pkl
